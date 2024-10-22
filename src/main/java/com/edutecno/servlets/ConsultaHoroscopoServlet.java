@@ -2,6 +2,8 @@ package com.edutecno.servlets;
 
 import com.edutecno.dao.HoroscopoDAO;
 import com.edutecno.dao.HoroscopoDAOImpl;
+import com.edutecno.dao.UsuarioDAO;
+import com.edutecno.dao.UsuarioDAOImpl;
 import com.edutecno.modelo.Horoscopo;
 import com.edutecno.modelo.Usuario;
 
@@ -19,6 +21,38 @@ import java.util.List;
 @WebServlet("/consultaHoroscopo")
 public class ConsultaHoroscopoServlet extends HttpServlet {
     private final HoroscopoDAO horoscopoDAO = new HoroscopoDAOImpl();
+    private final UsuarioDAO usuarioDAO = new UsuarioDAOImpl();
+
+    private String calcularAnimal(Date fechaNacimiento, List<Horoscopo> listaHoroscopo) {
+        for (Horoscopo horoscopo : listaHoroscopo) {
+            Date fechaInicio = horoscopo.getFecha_inicio();
+            Date fechaFin = horoscopo.getFecha_fin();
+
+            // Ajustar al año de nacimiento
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(fechaNacimiento);
+            int yearNacimiento = cal.get(Calendar.YEAR);
+
+            Calendar calInicio = Calendar.getInstance();
+            Calendar calFin = Calendar.getInstance();
+            calInicio.setTime(fechaInicio);
+            calFin.setTime(fechaFin);
+
+            calInicio.set(Calendar.YEAR, yearNacimiento);
+            calFin.set(Calendar.YEAR, yearNacimiento);
+
+            // Si la fecha fin es menor que la fecha inicio, significa que cruza año nuevo
+            if (calFin.before(calInicio)) {
+                calFin.add(Calendar.YEAR, 1);
+            }
+
+            if ((fechaNacimiento.after(calInicio.getTime()) || fechaNacimiento.equals(calInicio.getTime())) &&
+                    (fechaNacimiento.before(calFin.getTime()) || fechaNacimiento.equals(calFin.getTime()))) {
+                return horoscopo.getAnimal();
+            }
+        }
+        return "No asignado";
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -33,46 +67,12 @@ public class ConsultaHoroscopoServlet extends HttpServlet {
 
         try {
             List<Horoscopo> listaHoroscopo = horoscopoDAO.obtenerHoroscopo();
-            Date fechaNacimiento = usuario.getFechaNacimiento();
+            String animal = calcularAnimal(usuario.getFechaNacimiento(), listaHoroscopo);
+            usuario.setAnimal(animal);
+            usuarioDAO.actualizarUsuario(usuario);
 
-            // Convertir la fecha de nacimiento a Calendar para manipulación más fácil
-            Calendar calNacimiento = Calendar.getInstance();
-            calNacimiento.setTime(fechaNacimiento);
-
-            // Variables para almacenar el año de referencia y el año de nacimiento
-            int yearNacimiento = calNacimiento.get(Calendar.YEAR);
-            int mesNacimiento = calNacimiento.get(Calendar.MONTH) + 1; // Los meses en Calendar empiezan en 0
-            int diaNacimiento = calNacimiento.get(Calendar.DAY_OF_MONTH);
-
-            for (Horoscopo horoscopo : listaHoroscopo) {
-                Calendar calInicio = Calendar.getInstance();
-                Calendar calFin = Calendar.getInstance();
-                calInicio.setTime(horoscopo.getFecha_inicio());
-                calFin.setTime(horoscopo.getFecha_fin());
-
-                // Ajustar al año de nacimiento
-                calInicio.set(Calendar.YEAR, yearNacimiento);
-                calFin.set(Calendar.YEAR, yearNacimiento);
-
-                // Si la fecha fin es menor que la fecha inicio, significa que cruza año nuevo
-                if (calFin.before(calInicio)) {
-                    calFin.add(Calendar.YEAR, 1);
-                }
-
-                Date inicioAjustado = calInicio.getTime();
-                Date finAjustado = calFin.getTime();
-
-                // Verificar si la fecha de nacimiento está en el rango
-                if ((fechaNacimiento.equals(inicioAjustado) || fechaNacimiento.after(inicioAjustado)) &&
-                        (fechaNacimiento.equals(finAjustado) || fechaNacimiento.before(finAjustado))) {
-                    usuario.setAnimal(horoscopo.getAnimal());
-                    break;
-                }
-            }
-
-            request.setAttribute("horoscopo", usuario.getAnimal());
+            request.setAttribute("horoscopo", animal);
             request.getRequestDispatcher("horoscopo.jsp").forward(request, response);
-
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect("error.jsp");

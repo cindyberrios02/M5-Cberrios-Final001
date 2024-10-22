@@ -39,6 +39,7 @@
                     <%
                         Usuario usuario = (Usuario)request.getAttribute("usuario");
                         if(usuario != null) {
+                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
                     %>
                     <form action="modificarUsuario" method="post">
                         <input type="hidden" name="id" value="<%= usuario.getId() %>">
@@ -53,6 +54,18 @@
                             <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control" id="email" name="email"
                                    value="<%= usuario.getEmail() %>" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento</label>
+                            <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento"
+                                   value="<%= sdf.format(usuario.getFechaNacimiento()) %>" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Animal del Horóscopo</label>
+                            <input type="text" class="form-control" value="<%= usuario.getAnimal() != null ? usuario.getAnimal() : "No calculado" %>"
+                                   readonly disabled>
                         </div>
 
                         <div class="mb-3">

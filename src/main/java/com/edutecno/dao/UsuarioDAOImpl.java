@@ -99,22 +99,21 @@ public class UsuarioDAOImpl extends AdministradorConexion implements UsuarioDAO 
 
     @Override
     public void actualizarUsuario(Usuario usuario) {
-        String sql = "UPDATE usuarios SET nombre = ?, email = ?, password = ? WHERE id = ?";
+        String sql = "UPDATE usuarios SET nombre = ?, email = ?, fecha_nacimiento = ?, password = ?, animal = ? WHERE id = ?";
 
         try (Connection conn = generaPoolConexion();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            System.out.println("Actualizando usuario con ID: " + usuario.getId());
             pstmt.setString(1, usuario.getNombre());
             pstmt.setString(2, usuario.getEmail());
-            pstmt.setString(3, usuario.getPassword());
-            pstmt.setLong(4, usuario.getId());
+            pstmt.setDate(3, new java.sql.Date(usuario.getFechaNacimiento().getTime()));
+            pstmt.setString(4, usuario.getPassword());
+            pstmt.setString(5, usuario.getAnimal());
+            pstmt.setLong(6, usuario.getId());
 
-            int rowsAffected = pstmt.executeUpdate();
-            System.out.println("Filas afectadas: " + rowsAffected);
+            pstmt.executeUpdate();
 
         } catch (SQLException e) {
-            System.out.println("Error al actualizar usuario: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Error al actualizar usuario", e);
         }
