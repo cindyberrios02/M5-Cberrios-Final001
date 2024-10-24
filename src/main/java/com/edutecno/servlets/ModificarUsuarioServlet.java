@@ -23,12 +23,34 @@ public class ModificarUsuarioServlet extends HttpServlet {
     private final UsuarioDAO usuarioDAO = new UsuarioDAOImpl();
     private final HoroscopoDAO horoscopoDAO = new HoroscopoDAOImpl();
 
+    // Método para manejar GET (cuando accedes a la página de modificar)
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String idStr = request.getParameter("id");
+
+        try {
+            Long id = Long.parseLong(idStr);
+            Usuario usuario = usuarioDAO.obtenerUsuarioPorId(id);
+
+            if (usuario != null) {
+                request.setAttribute("usuario", usuario);
+                request.getRequestDispatcher("/modificarUsuario.jsp").forward(request, response);
+            } else {
+                response.sendRedirect("listarUsuarios?error=Usuario no encontrado");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect("listarUsuarios?error=Error al cargar usuario");
+        }
+    }
+
+    // Método para calcular el animal del horóscopo
     private String calcularAnimal(Date fechaNacimiento, List<Horoscopo> listaHoroscopo) {
         for (Horoscopo horoscopo : listaHoroscopo) {
             Date fechaInicio = horoscopo.getFecha_inicio();
             Date fechaFin = horoscopo.getFecha_fin();
 
-            // Ajustar al año de nacimiento
             Calendar cal = Calendar.getInstance();
             cal.setTime(fechaNacimiento);
             int yearNacimiento = cal.get(Calendar.YEAR);
@@ -41,7 +63,6 @@ public class ModificarUsuarioServlet extends HttpServlet {
             calInicio.set(Calendar.YEAR, yearNacimiento);
             calFin.set(Calendar.YEAR, yearNacimiento);
 
-            // Si la fecha fin es menor que la fecha inicio, significa que cruza año nuevo
             if (calFin.before(calInicio)) {
                 calFin.add(Calendar.YEAR, 1);
             }
@@ -54,6 +75,7 @@ public class ModificarUsuarioServlet extends HttpServlet {
         return "No asignado";
     }
 
+    // Método para manejar POST (cuando envías el formulario de modificación)
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -65,18 +87,15 @@ public class ModificarUsuarioServlet extends HttpServlet {
                 usuario.setNombre(request.getParameter("nombre"));
                 usuario.setEmail(request.getParameter("email"));
 
-                // Manejar la fecha de nacimiento
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 Date fechaNacimiento = sdf.parse(request.getParameter("fechaNacimiento"));
                 usuario.setFechaNacimiento(fechaNacimiento);
 
-                // Manejar la contraseña
                 String password = request.getParameter("password");
                 if (password != null && !password.trim().isEmpty()) {
                     usuario.setPassword(password);
                 }
 
-                // Calcular el animal basado en la fecha de nacimiento
                 List<Horoscopo> listaHoroscopo = horoscopoDAO.obtenerHoroscopo();
                 String animal = calcularAnimal(fechaNacimiento, listaHoroscopo);
                 usuario.setAnimal(animal);
@@ -92,4 +111,3 @@ public class ModificarUsuarioServlet extends HttpServlet {
         }
     }
 }
-
